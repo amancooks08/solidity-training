@@ -48,6 +48,11 @@ contract StakingContract {
         lockUpPeriod = _newLockUpPeriod;
     }
 
+    function changeInterestRate(uint _newInterestRate) external onlyOwner {
+        // Only the owner can change the interest rate
+        interestRate = _newInterestRate;
+    }
+
     function withdraw() external {
         require(stakers[msg.sender].stakedAmount > 0, "Not a staker");
         require(block.timestamp >= stakers[msg.sender].startTime + lockUpPeriod, "Lock-up period not over");
