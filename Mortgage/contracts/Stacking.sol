@@ -16,6 +16,12 @@ contract StakingContract {
     event Staked(address indexed staker, uint amount);
     event Withdrawn(address indexed staker, uint amount);
 
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Not the contract owner");
+        _;
+    }
+
     constructor(uint _lockUpPeriod, uint _interestRate) {
         owner = msg.sender;
         lockUpPeriod = _lockUpPeriod;
@@ -34,6 +40,11 @@ contract StakingContract {
         }
 
         emit Staked(msg.sender, msg.value);
+    }
+
+    function setLockUpPeriod(uint _newLockUpPeriod) external onlyOwner {
+        // Only the owner can change the lock-up period
+        lockUpPeriod = _newLockUpPeriod;
     }
 
     function withdraw() external {
