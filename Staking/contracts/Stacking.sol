@@ -64,8 +64,7 @@ contract StakingContract {
     }
 
     function updateReward(address staker) internal {
-        uint elapsedTime = block.timestamp - stakers[staker].startTime;
-        uint interest = (stakers[staker].stakedAmount * interestRate * elapsedTime) / (365 days * 100);
+        uint interest = calculateInterest(staker);
         stakers[staker].stakedAmount += interest;
         stakers[staker].startTime = block.timestamp;
     }
