@@ -9,6 +9,7 @@ contract StakingContract {
     struct Staker {
         uint stakedAmount;
         uint startTime;
+        uint reward;
     }
 
     mapping(address => Staker) public stakers;
@@ -36,7 +37,7 @@ contract StakingContract {
             updateReward(msg.sender);
         } else {
             // If it's a new staker, initialize their staking details
-            stakers[msg.sender] = Staker(msg.value, block.timestamp);
+            stakers[msg.sender] = Staker(msg.value, block.timestamp, 0);
         }
 
         emit Staked(msg.sender, msg.value);
@@ -58,14 +59,14 @@ contract StakingContract {
         payable(msg.sender).transfer(stakers[msg.sender].stakedAmount + interest);
 
         // Reset staking details for the user
-        stakers[msg.sender] = Staker(0, 0);
+        stakers[msg.sender] = Staker(0, 0, 0);
 
         emit Withdrawn(msg.sender, stakers[msg.sender].stakedAmount);
     }
 
     function updateReward(address staker) internal {
         uint interest = calculateInterest(staker);
-        stakers[staker].stakedAmount += interest;
+        stakers[staker].reward += interest;
         stakers[staker].startTime = block.timestamp;
     }
 
