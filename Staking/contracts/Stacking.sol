@@ -18,9 +18,10 @@ contract StakingContract {
 
     event Staked(address indexed staker, uint amount);
     event Withdrawn(address indexed staker, uint amount);
+    event RedeemReward(address indexed staker, uint amount);
 
-    // Address of the token contract
-    IERC20 public token;
+    // The token that will be used to give rewards
+    IERC20 public rewardToken;
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Not the contract owner");
@@ -69,6 +70,21 @@ contract StakingContract {
         stakers[msg.sender] = Staker(0, 0, 0);
 
         emit Withdrawn(msg.sender, stakers[msg.sender].stakedAmount);
+    }
+
+    function redeemReward() external {
+        require(stakers[msg.sender].stakedAmount > 0, "Not a staker");
+
+        // Update the reward
+        updateReward(msg.sender);
+
+        // Transfer the reward to the user
+        rewardToken.transfer(msg.sender, stakers[msg.sender].reward);
+
+        // Reset the reward
+        stakers[msg.sender].reward = 0;
+
+        emit RedeemReward(msg.sender, stakers[msg.sender].reward);
     }
 
     function updateReward(address staker) internal {
