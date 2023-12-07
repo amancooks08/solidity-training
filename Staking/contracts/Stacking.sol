@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 contract StakingContract {
     address public owner;
     uint public lockUpPeriod; // Lock-up period in seconds
@@ -17,16 +19,19 @@ contract StakingContract {
     event Staked(address indexed staker, uint amount);
     event Withdrawn(address indexed staker, uint amount);
 
+    // Address of the token contract
+    IERC20 public token;
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Not the contract owner");
         _;
     }
 
-    constructor(uint _lockUpPeriod, uint _interestRate) {
+    constructor(uint _lockUpPeriod, uint _interestRate, address _tokenAddress) {
         owner = msg.sender;
         lockUpPeriod = _lockUpPeriod;
-        interestRate = _interestRate;
+        interestRate = _interestRate;  
+        token = IERC20(_tokenAddress);
     }
 
     function stake() external payable {
