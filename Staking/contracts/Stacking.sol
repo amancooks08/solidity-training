@@ -64,7 +64,8 @@ contract StakingContract {
         require(block.timestamp >= stakers[msg.sender].startTime + lockUpPeriod, "Lock-up period not over");
 
         // Withdraw the staked amount
-        payable(msg.sender).transfer(stakers[msg.sender].stakedAmount);
+        bool success = payable(msg.sender).send(stakers[msg.sender].stakedAmount);
+        require(success, "Failed to withdraw staked amount");
 
         // Reset staking details for the user
         stakers[msg.sender] = Staker(0, 0, 0);
