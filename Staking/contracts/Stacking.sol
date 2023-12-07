@@ -62,11 +62,8 @@ contract StakingContract {
         require(stakers[msg.sender].stakedAmount > 0, "Not a staker");
         require(block.timestamp >= stakers[msg.sender].startTime + lockUpPeriod, "Lock-up period not over");
 
-        // Calculate the interest accrued
-        uint interest = calculateInterest(msg.sender);
-
-        // Withdraw the staked amount plus interest
-        payable(msg.sender).transfer(stakers[msg.sender].stakedAmount + interest);
+        // Withdraw the staked amount
+        payable(msg.sender).transfer(stakers[msg.sender].stakedAmount);
 
         // Reset staking details for the user
         stakers[msg.sender] = Staker(0, 0, 0);
