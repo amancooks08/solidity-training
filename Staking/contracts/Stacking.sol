@@ -7,6 +7,7 @@ contract StakingContract {
     address public owner;
     uint public lockUpPeriod; // Lock-up period in seconds
     uint public interestRate; // Annual interest rate
+    uint constant public baseUnit = 1e6; // Base unit multiplier
 
     struct Staker {
         uint stakedAmount;
@@ -96,6 +97,6 @@ contract StakingContract {
 
     function calculateInterest(address staker) public view returns (uint) {
         uint elapsedTime = block.timestamp - stakers[staker].startTime;
-        return (stakers[staker].stakedAmount * interestRate * elapsedTime) / (365 days * 100);
+        return (stakers[staker].stakedAmount * interestRate * elapsedTime) / (365 days * baseUnit * 100);
     }
 }
