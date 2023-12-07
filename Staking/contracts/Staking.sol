@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -33,7 +33,7 @@ contract StakingContract {
         owner = msg.sender;
         lockUpPeriod = _lockUpPeriod;
         interestRate = _interestRate;  
-        token = IERC20(_tokenAddress);
+        rewardToken = IERC20(_tokenAddress);
     }
 
     function stake() external payable {
