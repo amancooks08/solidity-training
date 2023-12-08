@@ -72,4 +72,19 @@ describe("Staking", function () {
       expect(await stakingContract.lockUpPeriod()).to.equal(10);
     });
   });
+
+  describe.only("changeInterestRate", function () {
+    it("Should revert for non-owner", async function () {
+      await expect(stakingContract.connect(staker).changeInterestRate(10)).to.be.revertedWith("Invalid Owner: caller is not the owner");
+    });
+
+    it("Should revert for invalid rewardRate", async function () {
+      await expect(stakingContract.changeInterestRate(0)).to.be.revertedWith("Invalid rewardRate: Reward rate must be greater than 0");
+    });
+
+    it("Should set the right rewardRate", async function () {
+      await stakingContract.changeInterestRate(10);
+      expect(await stakingContract.interestRate()).to.equal(10);
+    });
+  });
 });

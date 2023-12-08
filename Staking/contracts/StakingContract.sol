@@ -62,6 +62,7 @@ contract StakingContract {
     }
 
     function changeInterestRate(uint _newInterestRate) external onlyOwner {
+        require(_newInterestRate > 0, "Invalid rewardRate: Reward rate must be greater than 0");
         // Only the owner can change the interest rate
         interestRate = _newInterestRate;
     }
