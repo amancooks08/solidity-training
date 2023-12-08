@@ -32,9 +32,6 @@ describe("Staking", function () {
 
     // Mint initial supply to Staking contract
     await rewardToken.transfer(await stakingContract.getAddress(), rewardTokenInitialSupply);
-
-    // Give staker some ETH
-    // await owner.send(staker.address, 100000000000000);
   });
 
 
@@ -97,24 +94,27 @@ describe("Staking", function () {
 
     it("Should stake successfully", async function () {
       const initialStakeAmount = ethers.parseEther("1");
+      const stakersBalance = await ethers.provider.getBalance(staker.address);
 
       // User stakes ETH
-      await stakingContract.connect(staker).stake({ value: initialStakeAmount });
-
+      const transaction = await stakingContract.connect(staker).stake({ value: initialStakeAmount });
+      
       // Check staker details
       const user = await stakingContract.stakers(staker.address);
       expect(user.stakedAmount).to.equal(initialStakeAmount);
       expect(user.startTime).to.not.equal(0);
       expect(user.reward).to.equal(0);
-
+      
+      // Expect change in user's state
+      expect(await ethers.provider.getBalance(staker.address)).to.lt(stakersBalance);
+      
       // Check emitted event 
-      await expect(stakingContract.connect(staker).
-      stake({ value: initialStakeAmount })).
+      await expect(transaction).
       to.emit(stakingContract, "Staked").
       withArgs(staker.address, initialStakeAmount);
     });
 
-    it.only("Should stake successfully if staker already staked", async function () {
+    it("Should stake successfully if staker already staked", async function () {
       const initialStakeAmount = ethers.parseEther("1");
 
       // User stakes ETH
