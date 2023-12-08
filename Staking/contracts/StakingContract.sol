@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract StakingContract {
-    address public owner;
+    address payable public owner;
     uint public lockUpPeriod; // Lock-up period in seconds
     uint public interestRate; // Annual interest rate
     uint constant public baseUnit = 1e6; // Base unit multiplier
@@ -29,8 +29,8 @@ contract StakingContract {
         _;
     }
 
-    constructor(uint _lockUpPeriod, uint _interestRate, address _tokenAddress) {
-        owner = msg.sender;
+    constructor(uint _lockUpPeriod, uint _interestRate, address _tokenAddress) payable {
+        owner = payable(msg.sender); 
         lockUpPeriod = _lockUpPeriod;
         interestRate = _interestRate;  
         rewardToken = IERC20(_tokenAddress);
@@ -100,3 +100,4 @@ contract StakingContract {
         return (stakers[staker].stakedAmount * interestRate * elapsedTime) / (365 days * baseUnit * 100);
     }
 }
+
