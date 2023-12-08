@@ -4,6 +4,8 @@ const {
 } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { expect } = require("chai");
+const { ethers } = require("hardhat");
+
 // import console.log
 
 describe("Staking", function () {
@@ -73,7 +75,7 @@ describe("Staking", function () {
     });
   });
 
-  describe.only("changeInterestRate", function () {
+  describe("changeInterestRate", function () {
     it("Should revert for non-owner", async function () {
       await expect(stakingContract.connect(staker).changeInterestRate(10)).to.be.revertedWith("Invalid Owner: caller is not the owner");
     });
@@ -85,6 +87,25 @@ describe("Staking", function () {
     it("Should set the right rewardRate", async function () {
       await stakingContract.changeInterestRate(10);
       expect(await stakingContract.interestRate()).to.equal(10);
+    });
+  });
+
+  describe("Stake", function () {
+    it("Should revert for invalid amount", async function () {
+      await expect(stakingContract.connect(staker).stake({ value: 0 })).to.be.revertedWith("Invalid amount: Must stake a positive amount");
+    });
+
+    it("Should stake successfully", async function () {
+      const initialStakeAmount = ethers.parseEther("1");
+
+      // User stakes ETH
+      await stakingContract.connect(staker).stake({ value: initialStakeAmount });
+
+      // Check staker details
+      const user = await stakingContract.stakers(staker.address);
+      expect(user.stakedAmount).to.equal(initialStakeAmount);
+      expect(user.startTime).to.not.equal(0);
+      expect(user.reward).to.equal(0);
     });
   });
 });

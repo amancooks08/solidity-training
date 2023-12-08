@@ -42,7 +42,7 @@ contract StakingContract {
     }
 
     function stake() external payable {
-        require(msg.value > 0, "Must stake a positive amount");
+        require(msg.value > 0, "Invalid amount: Must stake a positive amount");
 
         // If the user is already a staker, update their staked amount
         if (stakers[msg.sender].stakedAmount > 0) {
