@@ -6,7 +6,6 @@ const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-// import console.log
 
 describe("Staking", function () {
   let owner;
@@ -101,7 +100,8 @@ describe("Staking", function () {
     it("Should stake successfully", async function () {
       const initialStakeAmount = ethers.parseEther("1");
       const stakersBalance = await ethers.provider.getBalance(staker.address);
-
+      const contractBalance = await ethers.provider.getBalance(await stakingContract.getAddress());
+      
       // User stakes ETH
       const transaction = await stakingContract.connect(staker).stake({ value: initialStakeAmount });
       
@@ -114,6 +114,9 @@ describe("Staking", function () {
       // Expect change in user's state
       expect(await ethers.provider.getBalance(staker.address)).to.lt(stakersBalance);
       
+      // Expect change in contract's state
+      expect(await ethers.provider.getBalance(await stakingContract.getAddress())).to.gt(contractBalance);
+
       // Check emitted event 
       await expect(transaction).
       to.emit(stakingContract, "Staked").
@@ -122,9 +125,14 @@ describe("Staking", function () {
 
     it("Should stake successfully if staker already staked", async function () {
       const initialStakeAmount = ethers.parseEther("1");
-
+      const stakersBalance = await ethers.provider.getBalance(staker.address);
+      const contractBalance = await ethers.provider.getBalance(await stakingContract.getAddress());
+      
       // User stakes ETH
       await stakingContract.connect(staker).stake({ value: initialStakeAmount });
+
+      // We will be not be checking the state here as it will be same as above test case
+      // and result in duplicacy of test cases.
 
       // User stakes again
       const additionalStakeAmount = ethers.parseEther("0.5");
@@ -132,6 +140,12 @@ describe("Staking", function () {
       
       const user = await stakingContract.stakers(staker.address);
       expect(user.stakedAmount).to.equal(initialStakeAmount + additionalStakeAmount);
+
+      // Check emitted event
+      await expect(stakingContract.connect(staker).stake({ value: additionalStakeAmount })).
+      to.emit(stakingContract, "Staked").
+      withArgs(staker.address, additionalStakeAmount);
+      
     });
   });
 });
