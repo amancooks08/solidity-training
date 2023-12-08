@@ -79,6 +79,7 @@ contract StakingContract {
 
     function redeemReward() external {
         require(stakers[msg.sender].stakedAmount > 0, "Not a staker");
+        require(stakers[msg.sender].reward > 0, "No reward to redeem");
         require(totalSupply >= stakers[msg.sender].reward, "Reward Can't be redeemed right now: insufficient tokens");
         
         // Update the reward
