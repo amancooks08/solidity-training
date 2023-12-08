@@ -28,7 +28,7 @@ contract StakingContract {
     IERC20 public rewardToken;
 
     modifier onlyOwner() {
-        require(msg.sender == owner, "Not the contract owner");
+        require(msg.sender == owner, "Invalid Owner: caller is not the owner");
         _;
     }
 
@@ -56,6 +56,7 @@ contract StakingContract {
     }
 
     function setLockUpPeriod(uint _newLockUpPeriod) external onlyOwner {
+        require(_newLockUpPeriod > 0, "Invalid lockupPeriod: Lock-up period must be greater than 0");
         // Only the owner can change the lock-up period
         lockUpPeriod = _newLockUpPeriod;
     }

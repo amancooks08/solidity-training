@@ -57,4 +57,19 @@ describe("Staking", function () {
       expect(await rewardToken.balanceOf(await stakingContract.getAddress())).to.equal(rewardTokenInitialSupply);
     });
   });
+
+  describe("SetLockUpPeriod", function () {
+    it("Should revert for non-owner", async function () {
+      await expect(stakingContract.connect(staker).setLockUpPeriod(10)).to.be.revertedWith("Invalid Owner: caller is not the owner");
+    });
+
+    it("Should revert for invalid lockupPeriod", async function () {
+      await expect(stakingContract.setLockUpPeriod(0)).to.be.revertedWith("Invalid lockupPeriod: Lock-up period must be greater than 0");
+    });
+
+    it("Should set the right lockupPeriod", async function () {
+      await stakingContract.setLockUpPeriod(10);
+      expect(await stakingContract.lockUpPeriod()).to.equal(10);
+    });
+  });
 });
