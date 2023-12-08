@@ -36,24 +36,30 @@ describe("Staking", function () {
 
 
   describe("Deployment", function () {
-    it("Should set the right lockupPeriod", async function () {
-      expect(await stakingContract.lockUpPeriod()).to.equal(60);
+    describe("LockUpPeriod", function () {
+      it("Should set the right lockupPeriod", async function () {
+        expect(await stakingContract.lockUpPeriod()).to.equal(60);
+      });
+  
+      it("Should revert for invalid lockupPeriod", async function () {
+        await expect(StakingContract.deploy(0, interestRate, await rewardToken.getAddress())).to.be.revertedWith("Invalid lockupPeriod: Lock-up period must be greater than 0");
+      });
     });
 
-    it("Should revert for invalid lockupPeriod", async function () {
-      await expect(StakingContract.deploy(0, interestRate, await rewardToken.getAddress())).to.be.revertedWith("Invalid lockupPeriod: Lock-up period must be greater than 0");
+    describe("RewardRate", function () {
+      it("Should set the right rewardRate", async function () {
+        expect(await stakingContract.interestRate()).to.equal(interestRate);
+      });
+  
+      it("Should revert for invalid rewardRate", async function () {
+        await expect(StakingContract.deploy(lockUpPeriod, 0, await rewardToken.getAddress())).to.be.revertedWith("Invalid rewardRate: Reward rate must be greater than 0");
+      });
     });
 
-    it("Should set the right rewardRate", async function () {
-      expect(await stakingContract.interestRate()).to.equal(interestRate);
-    });
-
-    it("Should revert for invalid rewardRate", async function () {
-      await expect(StakingContract.deploy(lockUpPeriod, 0, await rewardToken.getAddress())).to.be.revertedWith("Invalid rewardRate: Reward rate must be greater than 0");
-    });
-
-    it("Should set the right rewardToken", async function () {
-      expect(await rewardToken.balanceOf(await stakingContract.getAddress())).to.equal(rewardTokenInitialSupply);
+    describe("RewardToken", function () {
+      it("Should set the right rewardToken", async function () {
+        expect(await rewardToken.balanceOf(await stakingContract.getAddress())).to.equal(rewardTokenInitialSupply);
+      });
     });
   });
 
