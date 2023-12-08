@@ -106,6 +106,26 @@ describe("Staking", function () {
       expect(user.stakedAmount).to.equal(initialStakeAmount);
       expect(user.startTime).to.not.equal(0);
       expect(user.reward).to.equal(0);
+
+      // Check emitted event 
+      await expect(stakingContract.connect(staker).
+      stake({ value: initialStakeAmount })).
+      to.emit(stakingContract, "Staked").
+      withArgs(staker.address, initialStakeAmount);
+    });
+
+    it.only("Should stake successfully if staker already staked", async function () {
+      const initialStakeAmount = ethers.parseEther("1");
+
+      // User stakes ETH
+      await stakingContract.connect(staker).stake({ value: initialStakeAmount });
+
+      // User stakes again
+      const additionalStakeAmount = ethers.parseEther("0.5");
+      await stakingContract.connect(staker).stake({ value: additionalStakeAmount });
+      
+      const user = await stakingContract.stakers(staker.address);
+      expect(user.stakedAmount).to.equal(initialStakeAmount + additionalStakeAmount);
     });
   });
 });

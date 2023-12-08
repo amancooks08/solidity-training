@@ -46,6 +46,7 @@ contract StakingContract {
 
         // If the user is already a staker, update their staked amount
         if (stakers[msg.sender].stakedAmount > 0) {
+            stakers[msg.sender].stakedAmount += msg.value;
             updateReward(msg.sender);
         } else {
             // If it's a new staker, initialize their staking details
