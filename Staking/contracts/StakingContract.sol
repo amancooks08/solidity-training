@@ -72,9 +72,11 @@ contract StakingContract {
         require(stakers[msg.sender].stakedAmount > 0, "Not a staker");
         require(block.timestamp >= stakers[msg.sender].startTime + lockUpPeriod, "Lock-up period not over");
 
+        // Redeem the reward
+        redeemReward(msg.sender);
+        
         // Withdraw the staked amount
-        bool success = payable(msg.sender).send(stakers[msg.sender].stakedAmount);
-        require(success, "Failed to withdraw staked amount");
+        payable(msg.sender).transfer(stakers[msg.sender].stakedAmount);
 
         // Reset staking details for the user
         stakers[msg.sender] = Staker(0, 0, 0);
@@ -82,22 +84,24 @@ contract StakingContract {
         emit Withdrawn(msg.sender, stakers[msg.sender].stakedAmount);
     }
 
-    function redeemReward() external {
-        require(stakers[msg.sender].stakedAmount > 0, "Not a staker");
-        require(stakers[msg.sender].reward > 0, "No reward to redeem");
-        require(totalSupply >= stakers[msg.sender].reward, "Reward Can't be redeemed right now: insufficient tokens");
+    function redeemReward(address staker) internal {
+        require(stakers[staker].stakedAmount > 0, "Not a staker");
+        require(totalSupply >= stakers[staker].reward, "Reward Can't be redeemed right now: insufficient tokens");
         
         // Update the reward
         updateReward(msg.sender);
 
-        // Transfer the reward to the user
-        rewardToken.transfer(msg.sender, stakers[msg.sender].reward);
+        // Check if the user has any reward to redeem
+        require(stakers[staker].reward > 0, "No reward to redeem");
 
-        // Reset the reward
-        stakers[msg.sender].reward = 0;
+        // Transfer the reward to the user
+        rewardToken.transfer(staker, stakers[msg.sender].reward);
 
         // Subtract the tokens from the total supply
-        totalSupply -= stakers[msg.sender].reward;
+        totalSupply -= stakers[staker].reward;
+
+        // Reset the reward
+        stakers[staker].reward = 0;
 
         emit RedeemReward(msg.sender, stakers[msg.sender].reward);
     }
