@@ -9,6 +9,9 @@ contract StakingContract {
     uint public interestRate; // Annual interest rate
     uint constant public baseUnit = 1e6; // Base unit multiplier
 
+    // The fixed amount of tokens.
+    uint256 public totalSupply = 10000000;
+
     struct Staker {
         uint stakedAmount;
         uint startTime;
@@ -76,7 +79,8 @@ contract StakingContract {
 
     function redeemReward() external {
         require(stakers[msg.sender].stakedAmount > 0, "Not a staker");
-
+        require(totalSupply >= stakers[msg.sender].reward, "Reward Can't be redeemed right now: insufficient tokens");
+        
         // Update the reward
         updateReward(msg.sender);
 
@@ -85,6 +89,9 @@ contract StakingContract {
 
         // Reset the reward
         stakers[msg.sender].reward = 0;
+
+        // Subtract the tokens from the total supply
+        totalSupply -= stakers[msg.sender].reward;
 
         emit RedeemReward(msg.sender, stakers[msg.sender].reward);
     }
