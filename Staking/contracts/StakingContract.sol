@@ -33,6 +33,8 @@ contract StakingContract {
     }
 
     constructor(uint _lockUpPeriod, uint _interestRate, address _tokenAddress) payable {
+        require(_lockUpPeriod > 0, "Invalid lockupPeriod: Lock-up period must be greater than 0");
+        require(_interestRate > 0, "Invalid rewardRate: Reward rate must be greater than 0");
         owner = payable(msg.sender); 
         lockUpPeriod = _lockUpPeriod;
         interestRate = _interestRate;  
