@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "hardhat/console.sol";
 
 contract StakingContract {
     address payable public owner;
@@ -69,14 +70,18 @@ contract StakingContract {
     }
 
     function withdraw() external {
-        require(stakers[msg.sender].stakedAmount > 0, "Not a staker");
-        require(block.timestamp >= stakers[msg.sender].startTime + lockUpPeriod, "Lock-up period not over");
+        // Check if the user is a staker or not
+        require(stakers[msg.sender].stakedAmount > 0, "Not a staker: You have not staked any amount");
+
+        // Check if the lock-up period is over or not
+        require(block.timestamp >= stakers[msg.sender].startTime + lockUpPeriod, "Lock-up period not over: You cannot withdraw before lock-up period is over");
 
         // Redeem the reward
         redeemReward(msg.sender);
-        
+
         // Withdraw the staked amount
-        payable(msg.sender).transfer(stakers[msg.sender].stakedAmount);
+        (bool success, ) = payable(msg.sender).call{value: stakers[msg.sender].stakedAmount}("");
+        require(success, "Failed to withdraw staked amount");
 
         // Reset staking details for the user
         stakers[msg.sender] = Staker(0, 0, 0);
@@ -107,6 +112,11 @@ contract StakingContract {
     }
 
     function updateReward(address staker) internal {
+
+        // Check if the user is a staker
+        require(stakers[staker].stakedAmount > 0, "Incorrect Address: Not a staker");
+        
+        // Calculate the interest
         uint interest = calculateInterest(staker);
         stakers[staker].reward += interest;
         stakers[staker].startTime = block.timestamp;

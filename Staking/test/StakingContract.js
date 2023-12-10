@@ -145,7 +145,62 @@ describe("Staking", function () {
       await expect(stakingContract.connect(staker).stake({ value: additionalStakeAmount })).
       to.emit(stakingContract, "Staked").
       withArgs(staker.address, additionalStakeAmount);
+
+    });
+  });
+
+  describe("Withdraw", function () {
+    it("Should revert for not a staker if not staked any amount", async function () {
+      await expect(stakingContract.connect(staker).withdraw()).to.be.revertedWith("Not a staker: You have not staked any amount");
+    });
+
+    it("Should revert if lockup period is not over", async function () {
+      const initialStakeAmount = ethers.parseEther("1");
+      await stakingContract.connect(staker).stake({ value: initialStakeAmount });
+      await expect(stakingContract.connect(staker).withdraw()).to.be.revertedWith("Lock-up period not over: You cannot withdraw before lock-up period is over");
+    });
+
+    it("Should withdraw successfully", async function () {
+      const initialStakeAmount = ethers.parseEther("0.0001");
+      const stakersBalance = await ethers.provider.getBalance(staker.address);
+      console.log(stakersBalance)
+      // Send the contract
+      // User stakes ETH
+      console.log(await ethers.provider.getBalance(await stakingContract.getAddress()));
+
+      await stakingContract.connect(staker).stake({ value: initialStakeAmount });
+
+      // Keep track of contract's balance before withdrawing
+      const contractBalance = await ethers.provider.getBalance(await stakingContract.getAddress());
+
+      console.log(contractBalance);
+
+      // Increase time by lockupPeriod
+      await time.increase(lockUpPeriod);
+
+      // Keep track of staker's balance before withdrawing
+      const stakersBalanceB = await ethers.provider.getBalance(staker.address);
+      console.log(stakersBalanceB);
+      // User withdraws ETH
+      const transaction = await stakingContract.connect(staker).withdraw();
       
+      // Check staker details
+      const user = await stakingContract.stakers(staker.address);
+      expect(user.stakedAmount).to.equal(0);
+      expect(user.startTime).to.equal(0);
+      expect(user.reward).to.equal(0);
+      console.log(await ethers.provider.getBalance(staker.address));
+      
+      // Expect change in user's state
+      // expect(await ethers.provider.getBalance(staker.address)).to.gt(stakersBalanceB);
+      
+      // Expect change in contract's state
+      expect(await ethers.provider.getBalance(await stakingContract.getAddress())).to.lt(contractBalance);
+
+      // Check emitted event 
+      await expect(transaction).
+      to.emit(stakingContract, "Withdrawn").
+      withArgs(staker.address, initialStakeAmount);
     });
   });
 });
