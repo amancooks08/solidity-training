@@ -83,10 +83,11 @@ contract StakingContract {
         (bool success, ) = payable(msg.sender).call{value: stakers[msg.sender].stakedAmount}("");
         require(success, "Failed to withdraw staked amount");
 
+        // Emit the event
+        emit Withdrawn(msg.sender, stakers[msg.sender].stakedAmount);
+        
         // Reset staking details for the user
         stakers[msg.sender] = Staker(0, 0, 0);
-
-        emit Withdrawn(msg.sender, stakers[msg.sender].stakedAmount);
     }
 
     function redeemReward(address staker) internal {
