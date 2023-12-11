@@ -9,7 +9,8 @@ const { ethers } = require("hardhat");
 
 describe("Staking", function () {
   let owner;
-  let staker;
+  let staker1;
+  let staker2;
   let StakingContract;
   let stakingContract;
   let rewardToken;
@@ -19,7 +20,7 @@ describe("Staking", function () {
   const rewardTokenInitialSupply = 1000000;
 
   beforeEach(async function () {
-    [owner, staker] = await ethers.getSigners();
+    [owner, staker1, staker2] = await ethers.getSigners();
 
     // Deploy ERC-20 token contract
     const RewardTokenFactory = await ethers.getContractFactory('RewardToken');
@@ -64,7 +65,7 @@ describe("Staking", function () {
 
   describe("SetLockUpPeriod", function () {
     it("Should revert for non-owner", async function () {
-      await expect(stakingContract.connect(staker).setLockUpPeriod(10)).to.be.revertedWith("Invalid Owner: caller is not the owner");
+      await expect(stakingContract.connect(staker1).setLockUpPeriod(10)).to.be.revertedWith("Invalid Owner: caller is not the owner");
     });
 
     it("Should revert for invalid lockupPeriod", async function () {
@@ -79,7 +80,7 @@ describe("Staking", function () {
 
   describe("changeInterestRate", function () {
     it("Should revert for non-owner", async function () {
-      await expect(stakingContract.connect(staker).changeInterestRate(10)).to.be.revertedWith("Invalid Owner: caller is not the owner");
+      await expect(stakingContract.connect(staker1).changeInterestRate(10)).to.be.revertedWith("Invalid Owner: caller is not the owner");
     });
 
     it("Should revert for invalid rewardRate", async function () {
@@ -92,27 +93,28 @@ describe("Staking", function () {
     });
   });
 
+
   describe("Stake", function () {
     it("Should revert for invalid amount", async function () {
-      await expect(stakingContract.connect(staker).stake({ value: 0 })).to.be.revertedWith("Invalid amount: Must stake a positive amount");
+      await expect(stakingContract.connect(staker1).stake({ value: 0 })).to.be.revertedWith("Invalid amount: Must stake a positive amount");
     });
 
     it("Should stake successfully", async function () {
       const initialStakeAmount = ethers.parseEther("1");
-      const stakersBalance = await ethers.provider.getBalance(staker.address);
+      const stakersBalance = await ethers.provider.getBalance(staker1.address);
       const contractBalance = await ethers.provider.getBalance(await stakingContract.getAddress());
       
       // User stakes ETH
-      const transaction = await stakingContract.connect(staker).stake({ value: initialStakeAmount });
+      const transaction = await stakingContract.connect(staker1).stake({ value: initialStakeAmount });
       
-      // Check staker details
-      const user = await stakingContract.stakers(staker.address);
+      // Check staker1 details
+      const user = await stakingContract.stakers(staker1.address);
       expect(user.stakedAmount).to.equal(initialStakeAmount);
       expect(user.startTime).to.not.equal(0);
       expect(user.reward).to.equal(0);
       
       // Expect change in user's state
-      expect(await ethers.provider.getBalance(staker.address)).to.lt(stakersBalance);
+      expect(await ethers.provider.getBalance(staker1.address)).to.lt(stakersBalance);
       
       // Expect change in contract's state
       expect(await ethers.provider.getBalance(await stakingContract.getAddress())).to.gt(contractBalance);
@@ -120,55 +122,55 @@ describe("Staking", function () {
       // Check emitted event 
       await expect(transaction).
       to.emit(stakingContract, "Staked").
-      withArgs(staker.address, initialStakeAmount);
+      withArgs(staker1.address, initialStakeAmount);
     });
 
-    it("Should stake successfully if staker already staked", async function () {
+    it("Should stake successfully if staker1 already staked", async function () {
       const initialStakeAmount = ethers.parseEther("1");
-      const stakersBalance = await ethers.provider.getBalance(staker.address);
+      const stakersBalance = await ethers.provider.getBalance(staker1.address);
       const contractBalance = await ethers.provider.getBalance(await stakingContract.getAddress());
       
       // User stakes ETH
-      await stakingContract.connect(staker).stake({ value: initialStakeAmount });
+      await stakingContract.connect(staker1).stake({ value: initialStakeAmount });
 
       // We will be not be checking the state here as it will be same as above test case
       // and result in duplicacy of test cases.
 
       // User stakes again
       const additionalStakeAmount = ethers.parseEther("0.5");
-      await stakingContract.connect(staker).stake({ value: additionalStakeAmount });
+      await stakingContract.connect(staker1).stake({ value: additionalStakeAmount });
       
-      const user = await stakingContract.stakers(staker.address);
+      const user = await stakingContract.stakers(staker1.address);
       expect(user.stakedAmount).to.equal(initialStakeAmount + additionalStakeAmount);
 
       // Check emitted event
-      await expect(stakingContract.connect(staker).stake({ value: additionalStakeAmount })).
+      await expect(stakingContract.connect(staker1).stake({ value: additionalStakeAmount })).
       to.emit(stakingContract, "Staked").
-      withArgs(staker.address, additionalStakeAmount);
+      withArgs(staker1.address, additionalStakeAmount);
 
     });
   });
 
   describe("Withdraw", function () {
-    it("Should revert for not a staker if not staked any amount", async function () {
-      await expect(stakingContract.connect(staker).withdraw()).to.be.revertedWith("Not a staker: You have not staked any amount");
+    it("Should revert for not a staker1 if not staked any amount", async function () {
+      await expect(stakingContract.connect(staker1).withdraw()).to.be.revertedWith("Not a staker1: You have not staked any amount");
     });
 
     it("Should revert if lockup period is not over", async function () {
       const initialStakeAmount = ethers.parseEther("1");
-      await stakingContract.connect(staker).stake({ value: initialStakeAmount });
-      await expect(stakingContract.connect(staker).withdraw()).to.be.revertedWith("Lock-up period not over: You cannot withdraw before lock-up period is over");
+      await stakingContract.connect(staker1).stake({ value: initialStakeAmount });
+      await expect(stakingContract.connect(staker1).withdraw()).to.be.revertedWith("Lock-up period not over: You cannot withdraw before lock-up period is over");
     });
 
     it("Should withdraw successfully", async function () {
       const initialStakeAmount = ethers.parseEther("0.0001");
-      const stakersBalance = await ethers.provider.getBalance(staker.address);
+      const stakersBalance = await ethers.provider.getBalance(staker1.address);
       console.log(stakersBalance)
       // Send the contract
       // User stakes ETH
       console.log(await ethers.provider.getBalance(await stakingContract.getAddress()));
 
-      await stakingContract.connect(staker).stake({ value: initialStakeAmount });
+      await stakingContract.connect(staker1).stake({ value: initialStakeAmount });
 
       // Keep track of contract's balance before withdrawing
       const contractBalance = await ethers.provider.getBalance(await stakingContract.getAddress());
@@ -178,21 +180,21 @@ describe("Staking", function () {
       // Increase time by lockupPeriod
       await time.increase(lockUpPeriod);
 
-      // Keep track of staker's balance before withdrawing
-      const stakersBalanceB = await ethers.provider.getBalance(staker.address);
+      // Keep track of staker1's balance before withdrawing
+      const stakersBalanceB = await ethers.provider.getBalance(staker1.address);
       console.log(stakersBalanceB);
       // User withdraws ETH
-      const transaction = await stakingContract.connect(staker).withdraw();
+      const transaction = await stakingContract.connect(staker1).withdraw();
       
-      // Check staker details
-      const user = await stakingContract.stakers(staker.address);
+      // Check staker1 details
+      const user = await stakingContract.stakers(staker1.address);
       expect(user.stakedAmount).to.equal(0);
       expect(user.startTime).to.equal(0);
       expect(user.reward).to.equal(0);
-      console.log(await ethers.provider.getBalance(staker.address));
+      console.log(await ethers.provider.getBalance(staker1.address));
       
       // Expect change in user's state
-      // expect(await ethers.provider.getBalance(staker.address)).to.gt(stakersBalanceB);
+      // expect(await ethers.provider.getBalance(staker1.address)).to.gt(stakersBalanceB);
       
       // Expect change in contract's state
       expect(await ethers.provider.getBalance(await stakingContract.getAddress())).to.lt(contractBalance);
@@ -200,7 +202,79 @@ describe("Staking", function () {
       // Check emitted event 
       await expect(transaction).
       to.emit(stakingContract, "Withdrawn").
-      withArgs(staker.address, initialStakeAmount);
+      withArgs(staker1.address, initialStakeAmount);
+    });
+  });
+
+  describe("AddReward", function () {
+    it("Should revert for non-owner", async function () {
+      await expect(stakingContract.connect(staker1).addReward(10)).to.be.revertedWith("Invalid Owner: caller is not the owner");
+    });
+
+    it("Should revert for invalid amount", async function () {
+      await expect(stakingContract.addReward(0)).to.be.revertedWith("Invalid amount: Must add a positive amount");
+    });
+
+    it("Should add reward successfully when there is a single staker1", async function () {
+      // Set allowance for the StakingContract
+      await rewardToken.approve(await stakingContract.getAddress(), 51000000);
+
+      // User stakes ETH
+      const initialStakeAmount = ethers.parseEther("1");
+      await stakingContract.connect(staker1).stake({ value: initialStakeAmount });
+      
+      // rewardAmount is the number of tokens to be added as reward
+      const rewardAmount = ethers.parseEther("0.00000000000051");
+
+      // Add reward
+      const transaction = await stakingContract.addReward(rewardAmount);
+
+      // Check staker1 details
+      const user = await stakingContract.stakers(staker1.address);
+      
+      // Expect change in user's state
+      expect(user.reward).to.equal(rewardAmount);
+      
+      // Expect change in contract's state
+      expect(await rewardToken.balanceOf(await stakingContract.getAddress())).to.gt(rewardTokenInitialSupply);
+
+      // Check emitted event
+      await expect(transaction).
+      to.emit(stakingContract, "RewardAdded").
+      withArgs(rewardAmount);
+    });
+
+    it.only("Should add reward successfully when there are multiple stakers", async function () {
+      // Set allowance for the StakingContract
+      await rewardToken.approve(await stakingContract.getAddress(), 51000000);
+
+      // User stakes ETH
+      const initialStakeAmountForStaker1 = ethers.parseEther("1");
+      const initialStakeAmountForStaker2 = ethers.parseEther("0.2");
+      await stakingContract.connect(staker1).stake({ value: initialStakeAmountForStaker1 });
+      await stakingContract.connect(staker2).stake({ value: initialStakeAmountForStaker2 });
+      
+      // rewardAmount is the number of tokens to be added as reward
+      const rewardAmount = ethers.parseEther("0.00000000000051");
+
+      // Add reward
+      const transaction = await stakingContract.addReward(rewardAmount);
+
+      // Check staker1 details
+      const user1 = await stakingContract.stakers(staker1.address);
+      const user2 = await stakingContract.stakers(staker2.address);
+      
+      // Expect change in user's state, with the reward being disstributed proportionally
+      expect(user1.reward).to.equal(rewardAmount * initialStakeAmountForStaker1 / (initialStakeAmountForStaker1 + initialStakeAmountForStaker2));
+      expect(user2.reward).to.equal(rewardAmount * initialStakeAmountForStaker2 / (initialStakeAmountForStaker1 + initialStakeAmountForStaker2));
+      
+      // Expect change in contract's state
+      expect(await rewardToken.balanceOf(await stakingContract.getAddress())).to.gt(rewardTokenInitialSupply);
+
+      // Check emitted event
+      await expect(transaction).
+      to.emit(stakingContract, "RewardAdded").
+      withArgs(rewardAmount);
     });
   });
 });
