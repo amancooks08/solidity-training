@@ -21,9 +21,13 @@ contract StakingContract {
 
     mapping(address => Staker) public stakers;
 
+    // Array to store the addresses of all the stakers
+    address[] public addressStakers;
+
     event Staked(address indexed staker, uint amount);
     event Withdrawn(address indexed staker, uint amount);
     event RedeemReward(address indexed staker, uint amount);
+    event RewardAdded(uint256 reward);
 
     // The token that will be used to give rewards
     IERC20 public rewardToken;
@@ -52,6 +56,7 @@ contract StakingContract {
         } else {
             // If it's a new staker, initialize their staking details
             stakers[msg.sender] = Staker(msg.value, block.timestamp, 0);
+            addressStakers.push(msg.sender);
         }
 
         emit Staked(msg.sender, msg.value);
@@ -126,5 +131,30 @@ contract StakingContract {
         uint elapsedTime = block.timestamp - stakers[staker].startTime;
         return (stakers[staker].stakedAmount * interestRate * elapsedTime) / (365 days * baseUnit * 100);
     }
-}
 
+    // Add Reward function adds an additional reward to the contract balance which is divided
+    // proportionally among the stakers.
+    function addReward(uint256 rewardAmount) external onlyOwner {
+        require(rewardAmount > 0, "Invalid amount: Must add a positive amount");
+
+        // Transfer ERC20 tokens to the contract
+        require(rewardToken.transferFrom(msg.sender, address(this), rewardAmount), "Failed to transfer ERC20 tokens");
+
+        // Calculate total staked amount
+        uint totalStakedAmount = 0;
+        for (uint i = 0; i < addressStakers.length; i++) {
+            if (stakers[addressStakers[i]].stakedAmount > 0) {
+                totalStakedAmount += stakers[addressStakers[i]].stakedAmount;
+            }
+        }
+        // Distribute reward proportionally
+        for (uint i = 0; i < addressStakers.length; i++) {
+            uint stakerShare = (stakers[addressStakers[i]].stakedAmount * rewardAmount) / totalStakedAmount;
+            stakers[addressStakers[i]].reward += stakerShare;
+            totalSupply += stakerShare; // Update totalSupply
+        }
+
+        // Emit event
+        emit RewardAdded(rewardAmount);
+    }
+}
