@@ -165,24 +165,19 @@ describe("Staking", function () {
     it("Should withdraw successfully", async function () {
       const initialStakeAmount = ethers.parseEther("0.0001");
       const stakersBalance = await ethers.provider.getBalance(staker1.address);
-      console.log(stakersBalance)
-      // Send the contract
+      
       // User stakes ETH
-      console.log(await ethers.provider.getBalance(await stakingContract.getAddress()));
-
       await stakingContract.connect(staker1).stake({ value: initialStakeAmount });
 
       // Keep track of contract's balance before withdrawing
       const contractBalance = await ethers.provider.getBalance(await stakingContract.getAddress());
-
-      console.log(contractBalance);
 
       // Increase time by lockupPeriod
       await time.increase(lockUpPeriod);
 
       // Keep track of staker1's balance before withdrawing
       const stakersBalanceB = await ethers.provider.getBalance(staker1.address);
-      console.log(stakersBalanceB);
+
       // User withdraws ETH
       const transaction = await stakingContract.connect(staker1).withdraw();
       
@@ -191,10 +186,9 @@ describe("Staking", function () {
       expect(user.stakedAmount).to.equal(0);
       expect(user.startTime).to.equal(0);
       expect(user.reward).to.equal(0);
-      console.log(await ethers.provider.getBalance(staker1.address));
       
       // Expect change in user's state
-      // expect(await ethers.provider.getBalance(staker1.address)).to.gt(stakersBalanceB);
+      expect(await ethers.provider.getBalance(staker.address)).to.gt(stakersBalanceB);
       
       // Expect change in contract's state
       expect(await ethers.provider.getBalance(await stakingContract.getAddress())).to.lt(contractBalance);
