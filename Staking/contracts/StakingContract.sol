@@ -9,9 +9,13 @@ contract StakingContract {
     uint public lockUpPeriod; // Lock-up period in seconds
     uint public interestRate; // Annual interest rate
     uint constant public baseUnit = 1e6; // Base unit multiplier
+    uint private totalStakedAmount; // Total staked amount
 
     // The fixed amount of tokens.
     uint256 public totalSupply = 10000000;
+
+    // Additional reward
+    uint256 public additionalReward;
 
     struct Staker {
         uint stakedAmount;
@@ -20,9 +24,6 @@ contract StakingContract {
     }
 
     mapping(address => Staker) public stakers;
-
-    // Array to store the addresses of all the stakers
-    address[] public addressStakers;
 
     event Staked(address indexed staker, uint amount);
     event Withdrawn(address indexed staker, uint amount);
@@ -56,9 +57,8 @@ contract StakingContract {
         } else {
             // If it's a new staker, initialize their staking details
             stakers[msg.sender] = Staker(msg.value, block.timestamp, 0);
-            addressStakers.push(msg.sender);
         }
-
+        totalStakedAmount += msg.value;
         emit Staked(msg.sender, msg.value);
     }
 
@@ -91,6 +91,9 @@ contract StakingContract {
         // Emit the event
         emit Withdrawn(msg.sender, stakers[msg.sender].stakedAmount);
         
+        // Subtract the staked amount from the total staked amount
+        totalStakedAmount -= stakers[msg.sender].stakedAmount;
+
         // Reset staking details for the user
         stakers[msg.sender] = Staker(0, 0, 0);
     }
@@ -122,6 +125,11 @@ contract StakingContract {
         // Check if the user is a staker
         require(stakers[staker].stakedAmount > 0, "Incorrect Address: Not a staker");
         
+        // Add the additional reward to the staker's reward
+        uint addRewardForUser = (additionalReward * stakers[staker].stakedAmount) / totalStakedAmount;
+        stakers[staker].reward += addRewardForUser;
+        additionalReward -= addRewardForUser;
+
         // Calculate the interest
         uint interest = calculateInterest(staker);
         stakers[staker].reward += interest;
@@ -141,19 +149,8 @@ contract StakingContract {
         // Transfer ERC20 tokens to the contract
         require(rewardToken.transferFrom(msg.sender, address(this), rewardAmount), "Failed to transfer ERC20 tokens");
 
-        // Calculate total staked amount
-        uint totalStakedAmount = 0;
-        for (uint i = 0; i < addressStakers.length; i++) {
-            if (stakers[addressStakers[i]].stakedAmount > 0) {
-                totalStakedAmount += stakers[addressStakers[i]].stakedAmount;
-            }
-        }
-        // Distribute reward proportionally
-        for (uint i = 0; i < addressStakers.length; i++) {
-            uint stakerShare = (stakers[addressStakers[i]].stakedAmount * rewardAmount) / totalStakedAmount;
-            stakers[addressStakers[i]].reward += stakerShare;
-            totalSupply += stakerShare; // Update totalSupply
-        }
+        // Add the additional reward
+        additionalReward += rewardAmount;
 
         // Emit event
         emit RewardAdded(rewardAmount);
