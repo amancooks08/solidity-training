@@ -8,19 +8,19 @@ contract StakingContract {
     address payable public owner;
     uint public lockUpPeriod; // Lock-up period in seconds
     uint public interestRate; // Annual interest rate
-    uint constant public baseUnit = 1e6; // Base unit multiplier
+    uint constant public percentageBaseUnit = 1e6; // Base unit multiplier
+    uint constant private coefficientBaseUnit = 1e18; // Base unit multiplier
     uint private totalStakedAmount; // Total staked amount
 
+    uint private rewardCoefficient; // Reward coefficient
     // The fixed amount of tokens.
     uint256 public totalSupply = 10000000;
-
-    // Additional reward
-    uint256 public additionalReward;
 
     struct Staker {
         uint stakedAmount;
         uint startTime;
         uint reward;
+        uint userCoefficient;
     }
 
     mapping(address => Staker) public stakers;
@@ -52,11 +52,11 @@ contract StakingContract {
 
         // If the user is already a staker, update their staked amount
         if (stakers[msg.sender].stakedAmount > 0) {
-            stakers[msg.sender].stakedAmount += msg.value;
             updateReward(msg.sender);
+            stakers[msg.sender].stakedAmount += msg.value;
         } else {
             // If it's a new staker, initialize their staking details
-            stakers[msg.sender] = Staker(msg.value, block.timestamp, 0);
+            stakers[msg.sender] = Staker(msg.value, block.timestamp, 0, rewardCoefficient);
         }
         totalStakedAmount += msg.value;
         emit Staked(msg.sender, msg.value);
@@ -95,18 +95,20 @@ contract StakingContract {
         totalStakedAmount -= stakers[msg.sender].stakedAmount;
 
         // Reset staking details for the user
-        stakers[msg.sender] = Staker(0, 0, 0);
+        stakers[msg.sender] = Staker(0, 0, 0, 0);
     }
 
     function redeemReward(address staker) internal {
         require(stakers[staker].stakedAmount > 0, "Not a staker");
-        require(totalSupply >= stakers[staker].reward, "Reward Can't be redeemed right now: insufficient tokens");
         
         // Update the reward
         updateReward(msg.sender);
 
         // Check if the user has any reward to redeem
         require(stakers[staker].reward > 0, "No reward to redeem");
+
+        // Check if the contract has enough reward to redeem
+        require(totalSupply >= stakers[staker].reward, "Reward Can't be redeemed right now: insufficient tokens");
 
         // Transfer the reward to the user
         rewardToken.transfer(staker, stakers[msg.sender].reward);
@@ -125,10 +127,8 @@ contract StakingContract {
         // Check if the user is a staker
         require(stakers[staker].stakedAmount > 0, "Incorrect Address: Not a staker");
         
-        // Add the additional reward to the staker's reward
-        uint addRewardForUser = (additionalReward * stakers[staker].stakedAmount) / totalStakedAmount;
-        stakers[staker].reward += addRewardForUser;
-        additionalReward -= addRewardForUser;
+        // Update the additional reward
+        updateAdditionalReward(staker);
 
         // Calculate the interest
         uint interest = calculateInterest(staker);
@@ -138,7 +138,7 @@ contract StakingContract {
 
     function calculateInterest(address staker) public view returns (uint) {
         uint elapsedTime = block.timestamp - stakers[staker].startTime;
-        return (stakers[staker].stakedAmount * interestRate * elapsedTime) / (365 days * baseUnit * 100);
+        return (stakers[staker].stakedAmount * interestRate * elapsedTime) / (365 days * percentageBaseUnit * 100);
     }
 
     // Add Reward function adds an additional reward to the contract balance which is divided
@@ -149,10 +149,21 @@ contract StakingContract {
         // Transfer ERC20 tokens to the contract
         require(rewardToken.transferFrom(msg.sender, address(this), rewardAmount), "Failed to transfer ERC20 tokens");
 
-        // Add the additional reward
-        additionalReward += rewardAmount;
-
+        // Update the global reward coefficient
+        rewardCoefficient += (rewardAmount * coefficientBaseUnit) /totalStakedAmount;
+       
         // Emit event
         emit RewardAdded(rewardAmount);
+    }
+
+    function updateAdditionalReward(address staker) internal {
+        uint additionalRewardAmount;
+        if(stakers[staker].userCoefficient != rewardCoefficient) {
+            additionalRewardAmount = ((stakers[staker].stakedAmount * rewardCoefficient) - (stakers[staker].stakedAmount * stakers[staker].userCoefficient))/coefficientBaseUnit;
+            stakers[staker].userCoefficient = rewardCoefficient;
+        } else {
+            additionalRewardAmount = (rewardCoefficient * stakers[staker].stakedAmount)/coefficientBaseUnit;
+        }
+        stakers[staker].reward += additionalRewardAmount;
     }
 }

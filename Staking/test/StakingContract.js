@@ -153,7 +153,7 @@ describe("Staking", function () {
 
   describe("Withdraw", function () {
     it("Should revert for not a staker1 if not staked any amount", async function () {
-      await expect(stakingContract.connect(staker1).withdraw()).to.be.revertedWith("Not a staker1: You have not staked any amount");
+      await expect(stakingContract.connect(staker1).withdraw()).to.be.revertedWith("Not a staker: You have not staked any amount");
     });
 
     it("Should revert if lockup period is not over", async function () {
@@ -162,8 +162,8 @@ describe("Staking", function () {
       await expect(stakingContract.connect(staker1).withdraw()).to.be.revertedWith("Lock-up period not over: You cannot withdraw before lock-up period is over");
     });
 
-    it("Should withdraw successfully", async function () {
-      const initialStakeAmount = ethers.parseEther("0.0001");
+    it("Should withdraw successfully, when no additional reward added.", async function () {
+      const initialStakeAmount = ethers.parseEther("0.001");
       const stakersBalance = await ethers.provider.getBalance(staker1.address);
       
       // User stakes ETH
@@ -188,12 +188,61 @@ describe("Staking", function () {
       expect(user.reward).to.equal(0);
       
       // Expect change in user's state
-      expect(await ethers.provider.getBalance(staker.address)).to.gt(stakersBalanceB);
+      expect(await ethers.provider.getBalance(staker1.address)).to.gt(stakersBalanceB);
       
       // Expect change in contract's state
       expect(await ethers.provider.getBalance(await stakingContract.getAddress())).to.lt(contractBalance);
 
       // Check emitted event 
+      await expect(transaction).
+      to.emit(stakingContract, "Withdrawn").
+      withArgs(staker1.address, initialStakeAmount);
+    });
+
+    it("Should withdraw successfully, when additional reward added.", async function () {
+      const initialStakeAmount = ethers.parseEther("0.001");
+      const stakersBalance = await ethers.provider.getBalance(staker1.address);
+      
+      // User stakes ETH
+      await stakingContract.connect(staker1).stake({ value: initialStakeAmount });
+
+      // Keep track of contract's balance before withdrawing
+      const contractBalance = await ethers.provider.getBalance(await stakingContract.getAddress());
+
+      // Increase time by lockupPeriod/2
+      await time.increase(lockUpPeriod/2);
+
+      // Keep track of staker1's balance before withdrawing
+      const stakersBalanceB = await ethers.provider.getBalance(staker1.address);
+
+      // Add reward
+      const rewardAmount = 100000;
+      await rewardToken.approve(await stakingContract.getAddress(), rewardAmount);
+      const t = await stakingContract.addReward(rewardAmount);
+
+      // Check emitted event      
+      expect(t).to.emit(stakingContract, "RewardAdded").withArgs(rewardAmount);
+      // Increase time by lockupPeriod/2 more
+      await time.increase(lockUpPeriod/2);
+
+      // User withdraws ETH
+      const transaction = await stakingContract.connect(staker1).withdraw();
+
+      // Check staker1 details
+      const user = await stakingContract.stakers(staker1.address);
+      expect(user.stakedAmount).to.equal(0);
+      expect(user.startTime).to.equal(0);
+      expect(user.reward).to.equal(0);
+
+      // Expect change in user's state
+      expect(await ethers.provider.getBalance(staker1.address)).to.gt(stakersBalanceB);
+      expect(await rewardToken.balanceOf(staker1.address)).to.gt(0);
+
+      // Expect change in contract's state
+      expect(await ethers.provider.getBalance(await stakingContract.getAddress())).to.lt(contractBalance);
+      expect(await rewardToken.balanceOf(await stakingContract.getAddress())).to.lt(rewardTokenInitialSupply + rewardAmount);
+
+      // Check emitted event
       await expect(transaction).
       to.emit(stakingContract, "Withdrawn").
       withArgs(staker1.address, initialStakeAmount);
