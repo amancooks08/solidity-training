@@ -6,28 +6,28 @@ import "hardhat/console.sol";
 
 contract StakingContract {
     address payable public owner;
-    uint public lockUpPeriod; // Lock-up period in seconds
-    uint public interestRate; // Annual interest rate
-    uint constant public percentageBaseUnit = 1e6; // Base unit multiplier
-    uint constant private coefficientBaseUnit = 1e18; // Base unit multiplier
-    uint private totalStakedAmount; // Total staked amount
+    uint256 public lockUpPeriod; // Lock-up period in seconds
+    uint24 public interestRate; // Annual interest rate
+    uint24 constant public percentageBaseUnit = 1e6; // Base unit multiplier
+    uint256 constant private coefficientBaseUnit = 1e18; // Base unit multiplier
+    uint256 private totalStakedAmount; // Total staked amount
 
-    uint private rewardCoefficient; // Reward coefficient
+    uint256 private rewardCoefficient; // Reward coefficient
     // The fixed amount of tokens.
     uint256 public totalSupply = 10000000;
 
     struct Staker {
-        uint stakedAmount;
-        uint startTime;
-        uint reward;
-        uint userCoefficient;
+        uint256 stakedAmount;
+        uint256 startTime;
+        uint128 reward;
+        uint256 userCoefficient;
     }
 
     mapping(address => Staker) public stakers;
 
-    event Staked(address indexed staker, uint amount);
-    event Withdrawn(address indexed staker, uint amount);
-    event RedeemReward(address indexed staker, uint amount);
+    event Staked(address indexed staker, uint256 amount);
+    event Withdrawn(address indexed staker, uint256 amount);
+    event RedeemReward(address indexed staker, uint256 amount);
     event RewardAdded(uint256 reward);
 
     // The token that will be used to give rewards
@@ -38,7 +38,7 @@ contract StakingContract {
         _;
     }
 
-    constructor(uint _lockUpPeriod, uint _interestRate, address _tokenAddress) payable {
+    constructor(uint256 _lockUpPeriod, uint24 _interestRate, address _tokenAddress) payable {
         require(_lockUpPeriod > 0, "Invalid lockupPeriod: Lock-up period must be greater than 0");
         require(_interestRate > 0, "Invalid rewardRate: Reward rate must be greater than 0");
         owner = payable(msg.sender); 
@@ -62,13 +62,13 @@ contract StakingContract {
         emit Staked(msg.sender, msg.value);
     }
 
-    function setLockUpPeriod(uint _newLockUpPeriod) external onlyOwner {
+    function setLockUpPeriod(uint256 _newLockUpPeriod) external onlyOwner {
         require(_newLockUpPeriod > 0, "Invalid lockupPeriod: Lock-up period must be greater than 0");
         // Only the owner can change the lock-up period
         lockUpPeriod = _newLockUpPeriod;
     }
 
-    function changeInterestRate(uint _newInterestRate) external onlyOwner {
+    function changeInterestRate(uint24 _newInterestRate) external onlyOwner {
         require(_newInterestRate > 0, "Invalid rewardRate: Reward rate must be greater than 0");
         // Only the owner can change the interest rate
         interestRate = _newInterestRate;
@@ -131,14 +131,14 @@ contract StakingContract {
         updateAdditionalReward(staker);
 
         // Calculate the interest
-        uint interest = calculateInterest(staker);
+        uint128 interest = calculateInterest(staker);
         stakers[staker].reward += interest;
         stakers[staker].startTime = block.timestamp;
     }
 
-    function calculateInterest(address staker) public view returns (uint) {
-        uint elapsedTime = block.timestamp - stakers[staker].startTime;
-        return (stakers[staker].stakedAmount * interestRate * elapsedTime) / (365 days * percentageBaseUnit * 100);
+    function calculateInterest(address staker) public view returns (uint128) {
+        uint256 elapsedTime = block.timestamp - stakers[staker].startTime;
+        return uint128((stakers[staker].stakedAmount * interestRate * elapsedTime) / (365 days * uint256(percentageBaseUnit) * 100));
     }
 
     // Add Reward function adds an additional reward to the contract balance which is divided
@@ -157,12 +157,12 @@ contract StakingContract {
     }
 
     function updateAdditionalReward(address staker) internal {
-        uint additionalRewardAmount;
+        uint128 additionalRewardAmount;
         if(stakers[staker].userCoefficient != rewardCoefficient) {
-            additionalRewardAmount = ((stakers[staker].stakedAmount * rewardCoefficient) - (stakers[staker].stakedAmount * stakers[staker].userCoefficient))/coefficientBaseUnit;
+            additionalRewardAmount = uint128(((stakers[staker].stakedAmount * rewardCoefficient) - (stakers[staker].stakedAmount * stakers[staker].userCoefficient))/coefficientBaseUnit);
             stakers[staker].userCoefficient = rewardCoefficient;
         } else {
-            additionalRewardAmount = (rewardCoefficient * stakers[staker].stakedAmount)/coefficientBaseUnit;
+            additionalRewardAmount = uint128((rewardCoefficient * stakers[staker].stakedAmount)/coefficientBaseUnit);
         }
         stakers[staker].reward += additionalRewardAmount;
     }
