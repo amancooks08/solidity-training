@@ -8,8 +8,8 @@ contract StakingContract {
     address payable public owner;
     uint256 public lockUpPeriod; // Lock-up period in seconds
     uint24 public interestRate; // Annual interest rate
-    uint24 constant public percentageBaseUnit = 1e6; // Base unit multiplier
-    uint256 constant private coefficientBaseUnit = 1e18; // Base unit multiplier
+    uint24 constant public PERCENTAGE_BASE_UNIT = 1e6; // Base unit multiplier
+    uint256 constant private COEFFICIENT_BASE_UNIT = 1e18; // Base unit multiplier
     uint256 private totalStakedAmount; // Total staked amount
 
     uint256 private rewardCoefficient; // Reward coefficient
@@ -138,7 +138,7 @@ contract StakingContract {
 
     function calculateInterest(address staker) public view returns (uint128) {
         uint256 elapsedTime = block.timestamp - stakers[staker].startTime;
-        return uint128((stakers[staker].stakedAmount * interestRate * elapsedTime) / (365 days * uint256(percentageBaseUnit) * 100));
+        return uint128((stakers[staker].stakedAmount * interestRate * elapsedTime) / (365 days * uint256(PERCENTAGE_BASE_UNIT) * 100));
     }
 
     // Add Reward function adds an additional reward to the contract balance which is divided
@@ -150,7 +150,7 @@ contract StakingContract {
         require(rewardToken.transferFrom(msg.sender, address(this), rewardAmount), "Failed to transfer ERC20 tokens");
 
         // Update the global reward coefficient
-        rewardCoefficient += (rewardAmount * coefficientBaseUnit) /totalStakedAmount;
+        rewardCoefficient += (rewardAmount * COEFFICIENT_BASE_UNIT) /totalStakedAmount;
        
         // Emit event
         emit RewardAdded(rewardAmount);
@@ -159,10 +159,10 @@ contract StakingContract {
     function updateAdditionalReward(address staker) internal {
         uint128 additionalRewardAmount;
         if(stakers[staker].userCoefficient != rewardCoefficient) {
-            additionalRewardAmount = uint128(((stakers[staker].stakedAmount * rewardCoefficient) - (stakers[staker].stakedAmount * stakers[staker].userCoefficient))/coefficientBaseUnit);
+            additionalRewardAmount = uint128(((stakers[staker].stakedAmount * rewardCoefficient) - (stakers[staker].stakedAmount * stakers[staker].userCoefficient))/COEFFICIENT_BASE_UNIT);
             stakers[staker].userCoefficient = rewardCoefficient;
         } else {
-            additionalRewardAmount = uint128((rewardCoefficient * stakers[staker].stakedAmount)/coefficientBaseUnit);
+            additionalRewardAmount = uint128((rewardCoefficient * stakers[staker].stakedAmount)/COEFFICIENT_BASE_UNIT);
         }
         stakers[staker].reward += additionalRewardAmount;
     }
