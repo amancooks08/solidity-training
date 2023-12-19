@@ -161,8 +161,6 @@ contract StakingContract {
         if(stakers[staker].userCoefficient != rewardCoefficient) {
             additionalRewardAmount = uint128(((stakers[staker].stakedAmount * rewardCoefficient) - (stakers[staker].stakedAmount * stakers[staker].userCoefficient))/COEFFICIENT_BASE_UNIT);
             stakers[staker].userCoefficient = rewardCoefficient;
-        } else {
-            additionalRewardAmount = uint128((rewardCoefficient * stakers[staker].stakedAmount)/COEFFICIENT_BASE_UNIT);
         }
         stakers[staker].reward += additionalRewardAmount;
     }
