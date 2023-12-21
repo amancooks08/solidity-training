@@ -84,34 +84,33 @@ contract StakingContract {
         // Redeem the reward
         redeemReward(msg.sender);
 
+        uint256 stakedAmount = stakers[msg.sender].stakedAmount;
+        
+        // Subtract the staked amount from the total staked amount
+        totalStakedAmount -= stakedAmount;
+
+        // Reset staking details for the user
+        stakers[msg.sender] = Staker(0, block.timestamp, 0, 0);
+
         // Withdraw the staked amount
-        (bool success, ) = payable(msg.sender).call{value: stakers[msg.sender].stakedAmount}("");
+        (bool success, ) = payable(msg.sender).call{value: stakedAmount}("");
         require(success, "Failed to withdraw staked amount");
 
         // Emit the event
-        emit Withdrawn(msg.sender, stakers[msg.sender].stakedAmount);
-        
-        // Subtract the staked amount from the total staked amount
-        totalStakedAmount -= stakers[msg.sender].stakedAmount;
-
-        // Reset staking details for the user
-        stakers[msg.sender] = Staker(0, 0, 0, 0);
+        emit Withdrawn(msg.sender, stakedAmount);
     }
 
     function redeemReward(address staker) internal {
         require(stakers[staker].stakedAmount > 0, "Not a staker");
         
         // Update the reward
-        updateReward(msg.sender);
+        uint128 rewardAmount = updateReward(msg.sender);
 
         // Check if the user has any reward to redeem
-        require(stakers[staker].reward > 0, "No reward to redeem");
+        require(rewardAmount > 0, "No reward to redeem");
 
         // Check if the contract has enough reward to redeem
-        require(totalSupply >= stakers[staker].reward, "Reward Can't be redeemed right now: insufficient tokens");
-
-        // Transfer the reward to the user
-        rewardToken.transfer(staker, stakers[msg.sender].reward);
+        require(totalSupply >= rewardAmount, "Reward Can't be redeemed right now: insufficient tokens");
 
         // Subtract the tokens from the total supply
         totalSupply -= stakers[staker].reward;
@@ -119,21 +118,23 @@ contract StakingContract {
         // Reset the reward
         stakers[staker].reward = 0;
 
-        emit RedeemReward(msg.sender, stakers[msg.sender].reward);
+        // Transfer the reward to the user
+        rewardToken.transfer(staker, stakers[msg.sender].reward);
+
+        emit RedeemReward(msg.sender, rewardAmount);
     }
 
-    function updateReward(address staker) internal {
+    function updateReward(address staker) internal returns (uint128){
 
         // Check if the user is a staker
         require(stakers[staker].stakedAmount > 0, "Incorrect Address: Not a staker");
         
         // Update the additional reward
-        updateAdditionalReward(staker);
+        uint128 additonalReward = updateAdditionalReward(staker);
 
         // Calculate the interest
         uint128 interest = calculateInterest(staker);
-        stakers[staker].reward += interest;
-        stakers[staker].startTime = block.timestamp;
+        return interest + additonalReward;
     }
 
     function calculateInterest(address staker) public view returns (uint128) {
@@ -156,14 +157,12 @@ contract StakingContract {
         emit RewardAdded(rewardAmount);
     }
 
-    function updateAdditionalReward(address staker) internal {
+    function updateAdditionalReward(address staker) internal returns (uint128){
         uint128 additionalRewardAmount;
         if(stakers[staker].userCoefficient != rewardCoefficient) {
             additionalRewardAmount = uint128(((stakers[staker].stakedAmount * rewardCoefficient) - (stakers[staker].stakedAmount * stakers[staker].userCoefficient))/COEFFICIENT_BASE_UNIT);
             stakers[staker].userCoefficient = rewardCoefficient;
-        } else {
-            additionalRewardAmount = uint128((rewardCoefficient * stakers[staker].stakedAmount)/COEFFICIENT_BASE_UNIT);
         }
-        stakers[staker].reward += additionalRewardAmount;
+        return additionalRewardAmount;
     }
 }
