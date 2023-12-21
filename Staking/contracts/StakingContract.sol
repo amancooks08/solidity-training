@@ -11,7 +11,7 @@ contract StakingContract {
     uint constant public baseUnit = 1e6; // Base unit multiplier
 
     // The fixed amount of tokens.
-    uint256 public totalSupply = 10000000;
+    uint256 public totalSupply;
 
     struct Staker {
         uint stakedAmount;
@@ -33,13 +33,14 @@ contract StakingContract {
         _;
     }
 
-    constructor(uint _lockUpPeriod, uint _interestRate, address _tokenAddress) payable {
+    function constructor1(uint _lockUpPeriod, uint _interestRate, address _tokenAddress) public payable {
         require(_lockUpPeriod > 0, "Invalid lockupPeriod: Lock-up period must be greater than 0");
         require(_interestRate > 0, "Invalid rewardRate: Reward rate must be greater than 0");
         owner = payable(msg.sender); 
         lockUpPeriod = _lockUpPeriod;
         interestRate = _interestRate;  
         rewardToken = IERC20(_tokenAddress);
+        totalSupply = 10000000;
     }
 
     function stake() external payable {
