@@ -1,0 +1,116 @@
+{
+  "manifestVersion": "3.2",
+  "proxies": [
+    {
+      "address": "0x6854032b2A55B7141175365e334A7ca5789230EF",
+      "txHash": "0x9fc8254ce65b1cad209599b406abd9fc77ee4449cfe43f72631a478d4b9f1d37",
+      "kind": "transparent"
+    }
+  ],
+  "impls": {
+    "a3c9111079b15607ff54a5478e9e8c72349dd8eba0b25ccc537bcd56c89a6d8e": {
+      "address": "0x04F104b21101c52E4C94a58DD030369f46BB98E1",
+      "txHash": "0x6642bd849d405f36544665205f22f0a8d93048f8ea2d02af16a5c864089ea63d",
+      "layout": {
+        "solcVersion": "0.8.20",
+        "storage": [
+          {
+            "label": "owner",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_address_payable",
+            "contract": "StakingContract",
+            "src": "contracts/StakingContract.sol:8"
+          },
+          {
+            "label": "lockUpPeriod",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_uint256",
+            "contract": "StakingContract",
+            "src": "contracts/StakingContract.sol:9"
+          },
+          {
+            "label": "interestRate",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_uint256",
+            "contract": "StakingContract",
+            "src": "contracts/StakingContract.sol:10"
+          },
+          {
+            "label": "totalSupply",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_uint256",
+            "contract": "StakingContract",
+            "src": "contracts/StakingContract.sol:14"
+          },
+          {
+            "label": "stakers",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_mapping(t_address,t_struct(Staker)99_storage)",
+            "contract": "StakingContract",
+            "src": "contracts/StakingContract.sol:22"
+          },
+          {
+            "label": "rewardToken",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_contract(IERC20)77",
+            "contract": "StakingContract",
+            "src": "contracts/StakingContract.sol:29"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_address_payable": {
+            "label": "address payable",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IERC20)77": {
+            "label": "contract IERC20",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_struct(Staker)99_storage)": {
+            "label": "mapping(address => struct StakingContract.Staker)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(Staker)99_storage": {
+            "label": "struct StakingContract.Staker",
+            "members": [
+              {
+                "label": "stakedAmount",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "startTime",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "reward",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "2"
+              }
+            ],
+            "numberOfBytes": "96"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          }
+        },
+        "namespaces": {}
+      }
+    }
+  }
+}

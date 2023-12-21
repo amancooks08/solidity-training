@@ -7,22 +7,22 @@
 const hre = require("hardhat");
 
 async function main() {
-  const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-  const unlockTime = currentTimestampInSeconds + 60;
+  const lockUpPeriod = 60; // 60 seconds
+  // Since our baseUnit is 1e6 we set the interest rate accordingly
+  const interestRate = 9000000; // 9% per year 
+  const rewardToken = await hre.ethers.deployContract("RewardToken");
+  await rewardToken.waitForDeployment();
+  const rewardTokenAddress = await rewardToken.getAddress();  
+  console.log(`RewardToken deployed to ${rewardTokenAddress}`);
 
-  const lockedAmount = hre.ethers.parseEther("0.001");
+  const staking  = await hre.ethers.getContractFactory("StakingContract");
+  const stakingContract = await hre.upgrades.deployProxy(staking, [lockUpPeriod, interestRate, rewardTokenAddress], {initializer: 'constructor1' })
 
-  const lock = await hre.ethers.deployContract("Lock", [unlockTime], {
-    value: lockedAmount,
-  });
-
-  await lock.waitForDeployment();
-
-  console.log(
-    `Lock with ${ethers.formatEther(
-      lockedAmount
-    )}ETH and unlock timestamp ${unlockTime} deployed to ${lock.target}`
-  );
+  await stakingContract.waitForDeployment();
+  const stakingContractAddress = await stakingContract.getAddress();
+  console.log("StakingContract deployed to:", stakingContractAddress);
+  console.log(await upgrades.erc1967.getImplementationAddress(stakingContractAddress), " is the implementation address of StakingContract")
+  console.log(await upgrades.erc1967.getAdminAddress(stakingContractAddress), " is the admin address of StakingContract")
 }
 
 // We recommend this pattern to be able to use async/await everywhere
